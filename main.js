@@ -1,118 +1,130 @@
+
 const canvas = document.getElementById("miCanvas");
-const ctx= canvas.getContext("2d");
+const ctx = canvas.getContext("2d");
 
-const fondo = new Image();
-fondo.src = "fondo.png";
-
-
-const tituloa= new Image();
-tituloa.src = "tituloa.png";
-const titulob= new Image();
-titulob.src = "titulob.png";
-const imgNormal = new Image();
-const imgHover = new Image();
-
-imgNormal.src = "start.png";
-imgHover.src = "start-hover.png";
-
-const btnX =170;
-const btnY = 210;
-const btnW = 250;
-const btnH = 100;  
+// Carga de imágenes
+const fondo = new Image(); fondo.src = "fondo.png";
+const tituloa = new Image(); tituloa.src = "tituloa.png";
+const titulob = new Image(); titulob.src = "titulob.png";
+const imgNormal = new Image(); imgNormal.src = "start.png";
+const imgHover = new Image(); imgHover.src = "start-hover.png";
+// Variables de estado y configuración
+const btnX = 450, btnY = 400, btnW = 250, btnH = 100;
 let hover = false;
 
-function dibujar() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(fondo , 0 , 0 , canvas.width , canvas.height);
-    ctx.drawImage(titulob, 0 , -200 , 600 , 600);
+const cuadrado = { x: 0 };
+const distanciaTotal = 50;
+const duracionMovimiento = 1000;
+const tiempoEspera = 10000;
 
-    if (hover) {
-        const scale = hover ? 1.1 : 1.0;
-    const w = btnW * scale;
-    const h = btnH * scale;
-
-    // Mantener el botón centrado al escalar
-    const x = btnX - (w - btnW) / 2;
-    const y = btnY - (h - btnH) / 2;
-
-    const imagen = hover ? imgHover : imgNormal;
-
-    ctx.drawImage(imagen, x, y, w, h);
-        
-    } else {
-        ctx.drawImage(imgNormal, btnX, btnY, btnW, btnH);
-    }
-}
-
-const cuadrado = {x: 0 , y : 50 , size : 50}
-const distanciaTotal = 50
-const duracionMovimiento = 2000
-const tiempoEspera = 10000
-        
 let startTime = null;
-let estado = "mover"
-let posStart = 0
-function dibujarAnimation(timestamp){
-    if(!startTime) startTime = timestamp
-    const elepsed = timestamp - startTime
-    
-    ctx.drawImage(tituloa , 0 , -50 , 600 , 600);
-    ctx.fillStyle = "blue"
-    if (estado == "mover"){
-        const progreso = Math.min(elepsed/ duracionMovimiento , 1)
-        cuadrado.x = distanciaTotal* (progreso*progreso); 
-        if (progreso == 1){
-            estado = "esperar"
-            startTime = timestamp
-        }
-    }else if (estado == "esperar"){
-        cuadrado.x = distanciaTotal
-        if(elepsed >= tiempoEspera){
-            estado = "regresar"
-            startTime =timestamp 
-        }
-    }else if (estado == "regresar"){
-        const progreso = Math.min(elepsed / duracionMovimiento , 1)
-        cuadrado.x = distanciaTotal - (distanciaTotal * progreso)
-        if (progreso == 1){
-            estado = "mover"
-            startTime = timestamp
-        }
-    }
-    ctx.drawImage(tituloa , cuadrado.x , -50 , 600 , 600);
-    requestAnimationFrame(dibujarAnimation)
+let estado = "mover";
+// Configuración de la nieve
+const cantidadCopos = 100;
+const copos = [];
+
+for (let i = 0; i < cantidadCopos; i++) {
+    copos.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        radio: Math.random() * 2 + 1,
+        velocidad: Math.random() * 1 + 0.5
+    });
 }
+//actualizar la scena
+let pantallaActual = "inicio"; // "inicio" o "seleccion"
+let alpha = 1; // Para la opacidad (1 = visible, 0 = invisible)
+let transicion = false; // Indica si estamos cambiando de pantalla
     
-imgNormal.onload = () => {
-    if (imgHover.complete)
-        dibujar();
-};
+// Bucle principal de renderizado
+function gameLoop(timestamp) {
+    if (!startTime) startTime = timestamp;
+    const elepsed = timestamp - startTime;
 
-imgHover.onload = () => {
-    if (imgNormal.complete)
-        dibujar();
-};
+    // 1. Limpieza y Fondo
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+                    // --- LÓGICA DE TRANSICIÓN ---
+    if (transicion) {
+        alpha -= 0.02; // Velocidad de desvanecimiento
+        if (alpha <= 0) {
+            alpha = 0;
+            pantallaActual = "seleccion"; // Cambiamos de estado
+            transicion = false; // Detenemos la transición
+        }
+    } else if (alpha < 1 && pantallaActual === "seleccion") {
+        alpha += 0.02; // Aparecemos la nueva escena
+    }
+    // Aplicamos la transparencia global al contexto
+    ctx.globalAlpha = alpha;
+    // 2. DIBUJADO SEGÚN PANTALLA
+    if (pantallaActual === "inicio") {
+        ctx.drawImage(fondo, 0, 0, canvas.width, canvas.height);
+        // 2. Lógica de animación
+        if (estado === "mover") {
+            const progreso = Math.min(elepsed / duracionMovimiento, 1);
+            cuadrado.x = distanciaTotal * (progreso * progreso);
+            if (progreso === 1) { estado = "esperar"; startTime = timestamp; }
+        } else if (estado === "esperar") {
+            cuadrado.x = distanciaTotal;
+            if (elepsed >= tiempoEspera) { estado = "regresar"; startTime = timestamp; }
+        } else if (estado === "regresar") {
+            const progreso = Math.min(elepsed / duracionMovimiento, 1);
+            cuadrado.x = distanciaTotal - (distanciaTotal * progreso);
+            if (progreso === 1) { estado = "mover"; startTime = timestamp; }
+        }
+        ctx.drawImage(titulob, 80, -280,1000, 1000);
+        ctx.drawImage(tituloa, cuadrado.x, -40, 1000, 1000);
+        // Actualizar y dibujar nieve
+        ctx.fillStyle = "white";
+        copos.forEach(copo => {
+            copo.y += copo.velocidad; // Mover hacia abajo
+            
+            // Si el copo sale de abajo, reaparece arriba
+            if (copo.y > canvas.height) {
+                copo.y = -5;
+                copo.x = Math.random() * canvas.width;
+            }
+            
+            // Dibujar copo
+            ctx.beginPath();
+            ctx.arc(copo.x, copo.y, copo.radio, 0, Math.PI * 2);
+            ctx.fill();
+        });
 
-requestAnimationFrame(dibujarAnimation)
+        // 4. Dibujado de botón
+        if (hover) {
+            const scale = 1.1;
+            const w = btnW * scale, h = btnH * scale;
+            const x = btnX - (w - btnW) / 2;
+            const y = btnY - (h - btnH) / 2;
+            ctx.drawImage(imgHover, x, y, w, h);
+        } else {
+            ctx.drawImage(imgNormal, btnX, btnY, btnW, btnH);
+        }
+    } else if (pantallaActual === "seleccion") {
+        ctx.fillStyle = "black";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "white";
+        ctx.font = "30px Arial";
+        ctx.fillText("SELECCIONAR JUGADOR", 150, 200);
+    }
+    ctx.globalAlpha = 1.0;
+    requestAnimationFrame(gameLoop);
+}
+
+// Eventos
 canvas.addEventListener("mousemove", (e) => {
     const rect = canvas.getBoundingClientRect();
-
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
-
-    hover =
-        mouseX >= btnX &&
-        mouseX <= btnX + btnW &&
-        mouseY >= btnY &&
-        mouseY <= btnY + btnH;
-
-    dibujar();
+    hover = (mouseX >= btnX && mouseX <= btnX + btnW && mouseY >= btnY && mouseY <= btnY + btnH);
 });
 
-canvas.addEventListener("mousedown", (e) => {
-    if (hover) {
-        alert("¡Botón presionado!");
+canvas.addEventListener("mousedown", () => {
+    if (pantallaActual === "inicio" && hover) {
+        transicion = true; // Iniciamos la transición al hacer click
     }
 });
-    
-//animar
+        // Iniciar el bucle
+        requestAnimationFrame(gameLoop);
