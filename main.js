@@ -3,11 +3,11 @@ const canvas = document.getElementById("miCanvas");
 const ctx = canvas.getContext("2d");
 
 // Carga de imágenes
-const fondo = new Image(); fondo.src = "fondo.png";
-const tituloa = new Image(); tituloa.src = "tituloa.png";
-const titulob = new Image(); titulob.src = "titulob.png";
-const imgNormal = new Image(); imgNormal.src = "start.png";
-const imgHover = new Image(); imgHover.src = "start-hover.png";
+const fondo = new Image(); fondo.src = "/assets/portada/fondo.png";
+const tituloa = new Image(); tituloa.src = "/assets/portada/tituloa.png";
+const titulob = new Image(); titulob.src = "/assets/portada/titulob.png";
+const imgNormal = new Image(); imgNormal.src = "/assets/portada/start.png";
+const imgHover = new Image(); imgHover.src = "/assets/portada/start-hover.png";
 // Variables de estado y configuración
 const btnX = 450, btnY = 400, btnW = 250, btnH = 100;
 let hover = false;
@@ -43,8 +43,6 @@ function gameLoop(timestamp) {
 
     // 1. Limpieza y Fondo
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-                    // --- LÓGICA DE TRANSICIÓN ---
     if (transicion) {
         alpha -= 0.02; // Velocidad de desvanecimiento
         if (alpha <= 0) {
