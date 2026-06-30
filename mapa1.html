@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animación de Personaje</title>
+    <style>
+        body {
+            background-color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            background-color: #000;
+            border: 2px solid #fff;
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="gameCanvas" width="1000" height="800"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- 1. Carga de Imágenes ---
+        // NOTA: Reemplaza estas rutas con las rutas reales a tus 12 imagenes
+        const imgData = [
+            'assets/nivel1/idle_up.png', 'assets/nivel1/idle_down.png', 'assets/nivel1/idle_left.png', 'assets/nivel1/idle_right.png',
+            'assets/nivel1/walk_up_1.png', 'assets/nivel1/walk_up_2.png',
+            'assets/nivel1/walk_down_1.png', 'assets/nivel1/walk_down_2.png',
+            'assets/nivel1/walk_left_1.png', 'assets/nivel1/walk_left_2.png',
+            'assets/nivel1/walk_right_1.png', 'assets/nivel1/walk_right_2.png'
+        ];
+
+        let imagesLoaded = 0;
+        const images = {};
+
+        function preloadImages() {
+            const imageKeys = [
+                'idle_up', 'idle_down', 'idle_left', 'idle_right',
+                'walk_up_1', 'walk_up_2',
+                'walk_down_1', 'walk_down_2',
+                'walk_left_1', 'walk_left_2',
+                'walk_right_1', 'walk_right_2'
+            ];
+
+            imageKeys.forEach((key, index) => {
+                const img = new Image();
+                img.src = imgData[index];
+                img.onload = () => {
+                    imagesLoaded++;
+                    if (imagesLoaded === imgData.length) {
+                        // Todas las imágenes cargadas, iniciamos el bucle principal
+                        gameLoop();
+                    }
+                };
+                images[key] = img;
+            });
+        }
+
+        // --- 2. Estructura del Sprite ---
+        const spriteDef = {
+            // Almacena las imágenes reales cargadas en la estructura lógica
+            animations: {
+                idle: {
+                    up: ['idle_up'],
+                    down: ['idle_down'],
+                    left: ['idle_left'],
+                    right: ['idle_right']
+                },
+                walk: {
+                    up: ['walk_up_1', 'walk_up_2'],
+                    down: ['walk_down_1', 'walk_down_2'],
+                    left: ['walk_left_1', 'walk_left_2'],
+                    right: ['walk_right_1', 'walk_right_2']
+                }
+            }
+        };
+
+        // --- 3. Estado del Personaje ---
+        const player = {
+            x: canvas.width / 2 - 16, // Centrar (asumiendo sprites de 32x32)
+            y: canvas.height / 2 - 16,
+            width: 125, // Ancho de tus sprites
+            height: 175, // Alto de tus sprites
+            speed: 2,
+            direction: 'down', // Dirección inicial ('up', 'down', 'left', 'right')
+            state: 'idle', // Estado inicial ('idle', 'walk')
+            frameIndex: 0, // Índice de la imagen actual dentro de la animación
+            lastTime: 0, // Para controlar la velocidad de la animación
+            frameDelay: 150 // Milisegundos entre cada cambio de cuadro
+        };
+
+        // --- 4. Manejo del Teclado ---
+        const keys = {};
+        window.addEventListener('keydown', (e) => keys[e.code] = true);
+        window.addEventListener('keyup', (e) => keys[e.code] = false);
+
+        // --- 5. Bucle de Juego Principal ---
+        function gameLoop(timestamp) {
+            update(timestamp);
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // --- 6. Lógica de Actualización ---
+        function update(timestamp) {
+            let isMoving = false;
+
+            // Comprobar qué teclas están presionadas
+            if (keys['ArrowUp']) {
+                player.direction = 'up';
+                player.y -= player.speed;
+                isMoving = true;
+            }
+            if (keys['ArrowDown']) {
+                player.direction = 'down';
+                player.y += player.speed;
+                isMoving = true;
+            }
+            if (keys['ArrowLeft']) {
+                player.direction = 'left';
+                player.x -= player.speed;
+                isMoving = true;
+            }
+            if (keys['ArrowRight']) {
+                player.direction = 'right';
+                player.x += player.speed;
+                isMoving = true;
+            }
+
+            // Actualizar estado
+            player.state = isMoving ? 'walk' : 'idle';
+
+            // Lógica de Animación (Controlar el ciclo de cuadros)
+            if (timestamp - player.lastTime > player.frameDelay) {
+                // Obtener la lista de imágenes para el estado y dirección actual
+                const animationArray = spriteDef.animations[player.state][player.direction];
+
+                // Avanzar al siguiente cuadro, y volver al principio si se acaba
+                player.frameIndex = (player.frameIndex + 1) % animationArray.length;
+
+                player.lastTime = timestamp; // Actualizar el temporizador
+            }
+
+            // Limitar el movimiento dentro del canvas
+            player.x = Math.max(0, Math.min(canvas.width - player.width, player.x));
+            player.y = Math.max(0, Math.min(canvas.height - player.height, player.y));
+        }
+
+        // --- 7. Lógica de Dibujo ---
+        function draw() {
+            // Limpiar el canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Obtener la clave de la imagen actual basándose en estado, dirección e índice
+            const currentImageKey = spriteDef.animations[player.state][player.direction][player.frameIndex];
+            const currentImage = images[currentImageKey];
+
+            // Dibujar la imagen centrada en las coordenadas del jugador
+            if (currentImage) {
+                ctx.drawImage(currentImage, player.x, player.y, player.width, player.height);
+            }
+        }
+
+        // Iniciar el proceso
+        preloadImages();
+
+    </script>
+</body>
+</html>
